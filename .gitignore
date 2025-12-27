@@ -1,0 +1,8 @@
+.vs/*
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.github/*
