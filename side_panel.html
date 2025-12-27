@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chill While Working</title>
+  <link rel="stylesheet" href="side_panel.css" />
+</head>
+<body>
+  <main class="terminal">
+    <header class="terminal__header">
+      <div class="terminal__lights">
+        <span class="light light--close"></span>
+        <span class="light light--min"></span>
+        <span class="light light--max"></span>
+      </div>
+      <div class="header-controls">
+        <span class="terminal__title">Chill While Working</span>
+        <label class="theme-toggle" aria-label="Toggle theme">
+          <span class="theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></span>
+          <input type="checkbox" id="themeToggle" />
+          <span class="theme-toggle__track">
+            <span class="theme-toggle__thumb"></span>
+          </span>
+          <span class="theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></span>
+        </label>
+      </div>
+    </header>
+
+    <section class="panel panel-config">
+      <div class="panel__heading">Config</div>
+
+      <div class="field url-field">
+        <label for="youtubeUrl">YouTube URL</label>
+        <div class="input-row">
+          <input type="text" id="youtubeUrl" placeholder="https://youtube.com/watch?v=..." />
+        </div>
+      </div>
+
+      <div class="field grid">
+        <label>Window Size</label>
+        <div class="grid__pair">
+          <div>
+            <span>Width</span>
+            <input type="number" id="widthInput" min="200" max="2000" />
+          </div>
+          <div>
+            <span>Height</span>
+            <input type="number" id="heightInput" min="150" max="1500" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Anchor Position</label>
+        <div class="radio-row">
+          <label><input type="radio" name="position" value="bottom-right" checked />BR</label>
+          <label><input type="radio" name="position" value="top-right" />TR</label>
+          <label><input type="radio" name="position" value="bottom-left" />BL</label>
+          <label><input type="radio" name="position" value="top-left" />TL</label>
+        </div>
+      </div>
+
+      <div class="field inline controls-row">
+        <label class="checkbox">
+          <input type="checkbox" id="autoNext" />
+          Auto-next / autoplay
+        </label>
+        <button id="playBtn" class="action" type="button">Play</button>
+      </div>
+
+      <div class="button-row">
+        <button id="stopBtn" class="danger" type="button">Stop PiP</button>
+        <button id="saveBtn" class="ghost" type="button">Save Settings</button>
+      </div>
+    </section>
+
+    <section class="panel panel-history">
+      <div class="panel__heading">Chill List</div>
+      <div class="history__table-wrapper">
+        <table class="history__table">
+          <tbody id="historyList"></tbody>
+        </table>
+        <div id="historyEmpty" class="history__empty">No items yet.</div>
+      </div>
+    </section>
+  </main>
+  <script src="side_panel.js"></script>
+</body>
+</html>

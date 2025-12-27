@@ -1,0 +1,47 @@
+/* Hide standard YouTube chrome and distractions */
+body.ytp-autohide .ytp-chrome-bottom {
+  opacity: 0 !important;
+}
+
+html {
+  background: #000 !important;
+}
+
+body ytd-app,
+#content.ytd-app {
+  background: #000 !important;
+}
+
+#masthead-container,
+ytd-mini-guide-renderer,
+ytd-app #guide-button,
+ytd-page-manager #page-manager > :not(ytd-watch-flexy),
+ytd-watch-flexy #player ~ *,
+ytd-comments,
+ytd-watch-flexy #info,
+ytd-watch-flexy #below {
+  display: none !important;
+}
+
+ytd-watch-flexy #player {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  margin: 0 !important;
+}
+
+ytd-watch-flexy[theater] #player-theater-container,
+ytd-watch-flexy #player-container-outer,
+ytd-watch-flexy #player-container-inner,
+ytd-player {
+  background: #000 !important;
+}
+
+html body {
+  overflow: hidden !important;
+}
+
+/* Tidy scrollbar remnants */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
