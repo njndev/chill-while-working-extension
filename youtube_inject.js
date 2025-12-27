@@ -17,6 +17,16 @@
   const skipButtonId = "pip-skip-button";
   const dockId = "pip-control-dock";
   let pipRequested = false;
+  let dockPosition = "bottom-right";
+  let lastAdSkipTime = 0;
+  let isProcessingAd = false;
+
+  chrome.runtime?.onMessage?.addListener((message) => {
+    if (message?.type === "CHILL_MINI_MODE" && message?.position) {
+      dockPosition = message.position;
+      updateDockPosition();
+    }
+  });
 
   document.addEventListener("readystatechange", () => {
     if (document.readyState === "complete") {
@@ -24,13 +34,16 @@
     }
   });
 
-  const observer = new MutationObserver(makePlayerPrimary);
+  const observer = new MutationObserver(() => {
+    makePlayerPrimary();
+  });
   observer.observe(document.documentElement || document.body, {
     childList: true,
     subtree: true
   });
 
   makePlayerPrimary();
+  startAdMonitor();
 
   function makePlayerPrimary() {
     hideChrome();
@@ -87,10 +100,7 @@
     if (!document.getElementById(skipButtonId)) {
       const skipButton = createDockButton("Skip Ad", skipButtonId);
       skipButton.addEventListener("click", () => {
-        const currentVideo = getPlayerVideo() || video;
-        if (currentVideo) {
-          skipAd(currentVideo);
-        }
+        skipAdManually();
       });
       dock.appendChild(skipButton);
     }
@@ -105,15 +115,40 @@
     dock.id = dockId;
     Object.assign(dock.style, {
       position: "fixed",
-      bottom: "16px",
-      right: "16px",
       display: "flex",
       gap: "8px",
       zIndex: 100000,
       flexWrap: "wrap"
     });
+    updateDockPosition(dock);
     document.body.appendChild(dock);
     return dock;
+  }
+
+  function updateDockPosition(dock) {
+    const target = dock || document.getElementById(dockId);
+    if (!target) {
+      return;
+    }
+
+    target.style.bottom = "";
+    target.style.top = "";
+    target.style.left = "";
+    target.style.right = "";
+
+    const margin = "16px";
+
+    if (dockPosition.includes("bottom")) {
+      target.style.bottom = margin;
+    } else {
+      target.style.top = margin;
+    }
+
+    if (dockPosition.includes("right")) {
+      target.style.right = margin;
+    } else {
+      target.style.left = margin;
+    }
   }
 
   function createDockButton(label, id) {
@@ -127,7 +162,9 @@
       border: "1px solid #00ff95",
       borderRadius: "6px",
       fontFamily: "Consolas, 'Fira Code', monospace",
-      cursor: "pointer"
+      cursor: "pointer",
+      fontSize: "12px",
+      fontWeight: "600"
     });
     return button;
   }
@@ -159,19 +196,100 @@
     }
   }
 
+  function skipAdManually() {
+    const video = getPlayerVideo();
+    if (!video) {
+      return;
+    }
+    isProcessingAd = true;
+    skipAd(video);
+    setTimeout(() => {
+      isProcessingAd = false;
+    }, 2000);
+  }
+
   function skipAd(video) {
-    const clickable = document.querySelector(
-      ".ytp-ad-skip-button.ytp-button, .ytp-ad-overlay-close-button, .ytp-ad-skip-button-modern"
-    );
-    if (clickable) {
-      clickable.click();
+    const now = Date.now();
+    if (now - lastAdSkipTime < 2000) {
       return;
     }
 
-    const adOverlay = document.querySelector(".ad-showing, .ytp-ad-player-overlay");
-    if (adOverlay && Number.isFinite(video.duration)) {
-      video.currentTime = Math.max(video.duration - 0.1, 0);
+    const skipButtonSelectors = [
+      ".ytp-ad-skip-button.ytp-button",
+      ".ytp-ad-skip-button-modern",
+      ".ytp-ad-skip-button",
+      ".ytp-skip-ad-button",
+      "button.ytp-ad-skip-button",
+      ".ytp-ad-overlay-close-button"
+    ];
+
+    for (const selector of skipButtonSelectors) {
+      const button = document.querySelector(selector);
+      if (button && button.offsetParent !== null) {
+        button.click();
+        lastAdSkipTime = now;
+        return;
+      }
     }
+
+    if (!isAdPlaying()) {
+      return;
+    }
+
+    const player = document.querySelector(".html5-video-player");
+    if (player && player.classList.contains("ad-showing")) {
+      if (video && Number.isFinite(video.duration) && video.duration > 0 && video.duration < 600) {
+        const targetTime = Math.max(video.duration - 0.5, 0);
+        if (Math.abs(video.currentTime - targetTime) > 1) {
+          video.currentTime = targetTime;
+          lastAdSkipTime = now;
+        }
+      }
+    }
+  }
+
+  function isAdPlaying() {
+    const player = document.querySelector(".html5-video-player");
+    if (!player) {
+      return false;
+    }
+    
+    if (player.classList.contains("ad-showing") || player.classList.contains("ad-interrupting")) {
+      return true;
+    }
+
+    const adModule = document.querySelector(".ytp-ad-module");
+    if (adModule && adModule.style.display !== "none") {
+      return true;
+    }
+
+    const adText = document.querySelector(".ytp-ad-text");
+    if (adText && adText.offsetParent !== null) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function autoSkipAds() {
+    if (isProcessingAd) {
+      return;
+    }
+
+    const video = getPlayerVideo();
+    if (!video) {
+      return;
+    }
+
+    if (isAdPlaying()) {
+      skipAd(video);
+    }
+  }
+
+  function startAdMonitor() {
+    setInterval(() => {
+      autoSkipAds();
+    }, 2000);
   }
 
   function requestWindowMinimize() {

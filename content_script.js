@@ -10,6 +10,7 @@ const EXTENSION_MARKER = "ypip_ext";
 const MINI_WINDOW_NAME = "chill-mini-window";
 let observer;
 let forcedMiniWindow = false;
+let isContextInvalid = false;
 
 if (!isExtensionWindow()) {
   init();
@@ -23,6 +24,8 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 function init() {
+  checkExtensionContext();
+  
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", ensureButton);
   } else {
@@ -38,7 +41,28 @@ function init() {
   window.addEventListener("yt-navigate-finish", ensureButton);
 }
 
+function checkExtensionContext() {
+  if (!chrome?.runtime?.id) {
+    isContextInvalid = true;
+    cleanup();
+    return false;
+  }
+  return true;
+}
+
+function cleanup() {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+  removeButton();
+}
+
 function ensureButton() {
+  if (isContextInvalid || !checkExtensionContext()) {
+    return;
+  }
+  
   if (isExtensionWindow()) {
     removeButton();
     return;
@@ -146,7 +170,8 @@ function addCurrentPage(button) {
     })
     .catch((error) => {
       console.warn("Failed to add Chill link", error);
-      showButtonStatus(button, "Error", 1500, originalLabel);
+      const isContextError = error?.message?.includes("Extension context invalidated");
+      showButtonStatus(button, isContextError ? "Reload ext" : "Error", 2000, originalLabel);
     })
     .finally(() => {
       delete button.dataset.busy;
@@ -162,17 +187,27 @@ function showButtonStatus(button, status, timeout, resetLabel = "Add to Chill Li
 
 function sendAddToHistory(url) {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: "ADD_TO_HISTORY", payload: { url } }, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-        return;
-      }
-      if (response?.ok) {
-        resolve();
-      } else {
-        reject(new Error(response?.error || "Request failed"));
-      }
-    });
+    if (!chrome?.runtime?.sendMessage) {
+      reject(new Error("Extension context invalidated"));
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage({ type: "ADD_TO_HISTORY", payload: { url } }, (response) => {
+        if (chrome.runtime.lastError) {
+          const errorMsg = chrome.runtime.lastError.message || "Unknown error";
+          reject(new Error(errorMsg));
+          return;
+        }
+        if (response?.ok) {
+          resolve();
+        } else {
+          reject(new Error(response?.error || "Request failed"));
+        }
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 

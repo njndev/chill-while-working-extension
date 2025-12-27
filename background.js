@@ -6,7 +6,8 @@ const DEFAULT_SETTINGS = {
 
 const HISTORY_KEY = "ypipHistory";
 const MAX_HISTORY_ITEMS = 30;
-const CONTEXT_MENU_ID = "chill-add-menu";
+const CONTEXT_MENU_ADD_ID = "chill-add-menu";
+const CONTEXT_MENU_OPEN_ID = "chill-open-panel";
 const MINI_WINDOW_NAME = "chill-mini-window";
 const FALLBACK_TITLE = "No Title";
 
@@ -28,15 +29,24 @@ chrome.windows.onRemoved.addListener((windowId) => {
   }
 });
 
-chrome.contextMenus?.onClicked.addListener((info) => {
-  if (info.menuItemId !== CONTEXT_MENU_ID) {
-    return;
+chrome.contextMenus?.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === CONTEXT_MENU_ADD_ID) {
+    const targetUrl = info.linkUrl || info.pageUrl;
+    if (!targetUrl) {
+      return;
+    }
+    addUrlToHistory(targetUrl)
+      .then(() => {
+        if (tab?.windowId) {
+          openSidePanel(tab.windowId);
+        }
+      })
+      .catch((error) => console.warn("Unable to add Chill link", error));
+  } else if (info.menuItemId === CONTEXT_MENU_OPEN_ID) {
+    if (tab?.windowId) {
+      openSidePanel(tab.windowId);
+    }
   }
-  const targetUrl = info.linkUrl || info.pageUrl;
-  if (!targetUrl) {
-    return;
-  }
-  addUrlToHistory(targetUrl).catch((error) => console.warn("Unable to add Chill link", error));
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -53,8 +63,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return true;
     case "ADD_TO_HISTORY": {
       const targetUrl = message?.payload?.url;
+      const senderTabId = _sender?.tab?.id;
       addUrlToHistory(targetUrl)
-        .then(() => sendResponse({ ok: true }))
+        .then(() => {
+          sendResponse({ ok: true });
+          if (senderTabId && _sender?.tab?.windowId) {
+            openSidePanel(_sender.tab.windowId);
+          }
+        })
         .catch((error) => sendResponse({ ok: false, error: error?.message || "Unable to add" }));
       return true;
     }
@@ -84,7 +100,13 @@ function initializeContextMenus() {
   }
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
-      id: CONTEXT_MENU_ID,
+      id: CONTEXT_MENU_OPEN_ID,
+      title: "Open Chill While Working",
+      contexts: ["page", "selection", "link", "image", "video", "audio"]
+    });
+
+    chrome.contextMenus.create({
+      id: CONTEXT_MENU_ADD_ID,
       title: "Add to Chill List",
       contexts: ["page", "link"],
       documentUrlPatterns: [
@@ -130,7 +152,7 @@ async function openYoutubeWindow(payload) {
     await waitForTabComplete(tabId);
     await markMiniWindow(tabId);
     await applyMinimalUi(tabId);
-    notifyMiniMode(tabId);
+    notifyMiniMode(tabId, position);
   }
 }
 
@@ -289,11 +311,26 @@ async function markMiniWindow(tabId) {
   }
 }
 
-function notifyMiniMode(tabId) {
+function notifyMiniMode(tabId, position) {
   try {
-    chrome.tabs.sendMessage(tabId, { type: "CHILL_MINI_MODE", value: true });
+    chrome.tabs.sendMessage(tabId, { 
+      type: "CHILL_MINI_MODE", 
+      value: true,
+      position: position || DEFAULT_SETTINGS.position
+    });
   } catch (error) {
     console.warn("Unable to notify mini mode", error);
+  }
+}
+
+async function openSidePanel(windowId) {
+  if (!chrome.sidePanel?.open) {
+    return;
+  }
+  try {
+    await chrome.sidePanel.open({ windowId });
+  } catch (error) {
+    console.warn("Unable to open side panel", error);
   }
 }
 
