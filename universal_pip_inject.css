@@ -1,0 +1,158 @@
+/* Universal PiP Inject CSS - Hide clutter on popup windows */
+/* Maximizes video player area by making everything transparent except video */
+
+/* ========== GLOBAL STRATEGY ========== */
+/* Make ENTIRE body background black and fade everything */
+body.chill-popup-window {
+  background: #000 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* Disable scroll on html as well */
+html:has(body.chill-popup-window) {
+  overflow: hidden !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+/* Disable scroll on ALL platform-specific bodies */
+body[data-chill-platform] {
+  overflow: hidden !important;
+}
+
+body[data-chill-platform] html {
+  overflow: hidden !important;
+}
+
+/* Fade ALL direct children of body EXCEPT video containers */
+body.chill-popup-window > *:not(script):not(style) {
+  opacity: 0.05 !important;
+  transition: opacity 0.3s ease !important;
+  /* REMOVED: pointer-events: none - this was blocking video clicks */
+}
+
+/* ========== MAKE VIDEO FULLY VISIBLE AND CLICKABLE ========== */
+/* Force ALL videos to be FULLY VISIBLE with HIGHEST priority */
+body.chill-popup-window video,
+body[data-chill-platform] video {
+  opacity: 1 !important;
+  z-index: 999998 !important;
+  pointer-events: auto !important; /* CRITICAL: Allow clicking video */
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: contain !important;
+  background: #000 !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Make video controls clickable */
+body.chill-popup-window video::-webkit-media-controls,
+body.chill-popup-window video::-webkit-media-controls-panel,
+body.chill-popup-window video::-webkit-media-controls-play-button,
+body[data-chill-platform] video::-webkit-media-controls,
+body[data-chill-platform] video::-webkit-media-controls-panel,
+body[data-chill-platform] video::-webkit-media-controls-play-button {
+  pointer-events: auto !important;
+  z-index: 999999 !important;
+}
+
+/* ========== MAKE CONTROL DOCK VISIBLE AND CLICKABLE ========== */
+/* Ensure control dock and buttons stay on top and FULLY VISIBLE */
+#universal-pip-dock,
+#pip-control-dock,
+#universal-pip-button,
+#pip-launcher-button,
+#pip-skip-button {
+  opacity: 1 !important;
+  z-index: 999999 !important;
+  pointer-events: auto !important; /* CRITICAL: Allow clicking buttons */
+  visibility: visible !important;
+  display: flex !important;
+}
+
+/* ========== PLATFORM-SPECIFIC HIDING ========== */
+/* Hide specific UI elements but DON'T block pointer events on video area */
+
+/* FACEBOOK */
+body[data-chill-platform="facebook"] [role="banner"],
+body[data-chill-platform="facebook"] [role="navigation"],
+body[data-chill-platform="facebook"] [role="complementary"],
+body[data-chill-platform="facebook"] [data-pagelet="RightRail"],
+body[data-chill-platform="facebook"] [data-pagelet="LeftRail"] {
+  display: none !important;
+}
+
+/* TIKTOK */
+body[data-chill-platform="tiktok"] [data-e2e="browse-header"],
+body[data-chill-platform="tiktok"] [data-e2e="nav-bar"],
+body[data-chill-platform="tiktok"] [data-e2e="recommend-list"],
+body[data-chill-platform="tiktok"] [data-e2e="comment-list"] {
+  display: none !important;
+}
+
+/* INSTAGRAM */
+body[data-chill-platform="instagram"] [role="banner"],
+body[data-chill-platform="instagram"] nav,
+body[data-chill-platform="instagram"] aside {
+  display: none !important;
+}
+
+/* TWITTER */
+body[data-chill-platform="twitter"] [data-testid="sidebarColumn"],
+body[data-chill-platform="twitter"] [data-testid="primaryColumn"] > div:first-child,
+body[data-chill-platform="twitter"] nav,
+body[data-chill-platform="twitter"] aside {
+  display: none !important;
+}
+
+/* VIMEO */
+body[data-chill-platform="vimeo"] .topnav,
+body[data-chill-platform="vimeo"] .sidebar,
+body[data-chill-platform="vimeo"] .related-clips,
+body[data-chill-platform="vimeo"] .comments {
+  display: none !important;
+}
+
+/* GENERIC - hide common elements */
+body[data-chill-platform="generic"] header:not(:has(video)),
+body[data-chill-platform="generic"] nav:not(:has(video)),
+body[data-chill-platform="generic"] aside:not(:has(video)),
+body[data-chill-platform="generic"] footer:not(:has(video)) {
+  display: none !important;
+}
+
+/* ========== DISABLE SCROLLBARS EVERYWHERE ========== */
+/* Remove scrollbars completely */
+body.chill-popup-window::-webkit-scrollbar,
+body[data-chill-platform]::-webkit-scrollbar,
+html::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+body.chill-popup-window,
+body[data-chill-platform],
+html {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Prevent any element from scrolling EXCEPT video and controls */
+body.chill-popup-window *:not(video):not(#universal-pip-dock):not(#pip-control-dock),
+body[data-chill-platform] *:not(video):not(#universal-pip-dock):not(#pip-control-dock) {
+  overflow: visible !important;
+}
+
+/* Video maintains its own overflow */
+video {
+  overflow: hidden !important;
+}

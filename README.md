@@ -1,8 +1,8 @@
-# Chill While Working - YouTube Picture-in-Picture Extension
+﻿# Chill While Working - YouTube Picture-in-Picture Extension
 
 A Chrome Extension (Manifest V3) that enhances the YouTube viewing experience by opening videos in a minimalistic, resizable popup window with Picture-in-Picture controls, allowing users to watch content while working without distractions.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -11,20 +11,23 @@ A Chrome Extension (Manifest V3) that enhances the YouTube viewing experience by
 ## Features
 
 ### Core Functionality
-- **Popup Window Playback**: Open YouTube videos in a customizable popup window
+- **Popup Window Player**: Open YouTube videos in minimal, distraction-free popup window
+- **Auto-PiP & Auto-Minimize**: Videos automatically enter PiP mode and minimize window
+- **Intelligent Video Detection**: Smart detection of largest playing video (handles multiple videos)
+- **Smart PiP Switching**: Automatically switches to larger video in playlists
+- **Full Playback Control**: Play, pause, seek via native browser PiP controls
 - **Configurable Size & Position**: Set window dimensions and anchor position (4 corners)
-- **Picture-in-Picture Mode**: Automatic PiP request with enhanced controls
-- **Ad Skipping**: Programmatic YouTube ad bypass functionality
-- **History Tracking**: Store up to 30 recent videos with automatic title fetching
-- **Context Menu Integration**: Add videos to Chill List from any YouTube page or link
+- **History Tracking**: Store up to 30 recent YouTube videos with automatic title fetching
+- **Context Menu Integration**: Quick "Add to Chill List" on YouTube pages
 - **Theme Support**: Dark and light mode with persistent preference
-- **Auto-Next**: Optional autoplay configuration for continuous playback
+- **Ad Skipping**: Automatic YouTube ad bypass functionality
 
 ### User Interface
 - **Side Panel Control**: Terminal-inspired UI for configuration and history
-- **Floating Button**: "Add to Chill List" button on YouTube pages
-- **Minimal Player UI**: Distraction-free video player with hidden YouTube chrome
+- **Minimal Player UI**: Distraction-free video player in popup window
 - **Enhanced Controls**: "Let's Chill" and "Skip Ad" buttons in popup window
+- **History Panel**: View, play, and manage recent videos
+- **Relative Timestamps**: Smart time formatting (minutes, hours, days ago)
 
 ---
 
@@ -63,9 +66,9 @@ cd chill-while-working-extension
 
 ### Adding Videos to History
 
-**Method 1: From YouTube Page**
-- Navigate to any YouTube video
-- Click the floating "Add to Chill List" button (top-right)
+**Method 1: Floating Button on YouTube**
+- Navigate to any YouTube video page
+- Click the floating "Add to Chill List" button (top-right corner)
 - Video is added to history with automatic title fetching
 
 **Method 2: Context Menu**
@@ -77,22 +80,37 @@ cd chill-while-working-extension
 - Paste YouTube URL in side panel input field
 - Click "Play" to open and automatically add to history
 
-### Enhanced Playback Experience
+### Playing from History
 
-**Picture-in-Picture Controls:**
-- **"Let's Chill" Button**: Activates browser PiP and minimizes popup window
-- **"Skip Ad" Button**: Bypasses YouTube advertisements automatically
+1. Open side panel
+2. View history list with titles and timestamps
+3. Click "Play" button on history entry
+4. Video opens in popup window with auto-PiP
+5. History entry remains for repeat playback
+
+### Enhanced Playback Experience
 
 **Automatic Features:**
 - Player automatically requests PiP mode on load
+- Popup window automatically minimizes when PiP activates
 - Theater mode is forced for optimal viewing
 - UI chrome (masthead, sidebar, comments) is hidden
 - Video player fills entire popup window
 
+**Picture-in-Picture Controls:**
+- **"Let's Chill" Button**: Manually activates browser PiP and minimizes window
+- **"Skip Ad" Button**: Bypasses YouTube advertisements automatically
+- **Native Controls**: Full playback control via browser PiP interface
+
+**Smart Playlist Support:**
+- Automatically detects when video changes in playlist
+- Switches PiP to the new larger video
+- Maintains PiP state across video transitions
+
 ### Managing History
 
 - **View History**: Scroll through recent videos in side panel
-- **Play from History**: Click "Play" button on any history entry
+- **Play from History**: Click "Play" button on any entry
 - **Remove Entry**: Click "Remove" button to delete from history
 - **Open Original**: Click URL link to open video in new tab
 
@@ -103,21 +121,21 @@ cd chill-while-working-extension
 ### File Structure
 ```
 chill-while-working-extension/
-??? manifest.json                 # Manifest V3 configuration
-??? background.js                 # Service worker (background script)
-??? side_panel.html              # Side panel UI structure
-??? side_panel.css               # Side panel styles (terminal theme)
-??? side_panel.js                # Side panel logic and event handlers
-??? content_script.js            # Injected on YouTube pages
-??? youtube_inject.js            # Injected into popup windows
-??? youtube_inject.css           # Styles for popup windows
-??? images/                      # Extension icons
-?   ??? logo.png
-?   ??? logo_16.png
-?   ??? logo_32.png
-?   ??? logo_48.png
-?   ??? logo_128.png
-??? README.md                    # Project documentation
+├── manifest.json                 # Manifest V3 configuration
+├── background.js                 # Service worker (background script)
+├── side_panel.html              # Side panel UI structure
+├── side_panel.css               # Side panel styles (terminal theme)
+├── side_panel.js                # Side panel logic and event handlers
+├── content_script.js            # Injected on YouTube pages
+├── youtube_inject.js            # Injected into popup windows
+├── youtube_inject.css           # Styles for popup windows
+├── images/                      # Extension icons
+│   ├── logo.png
+│   ├── logo_16.png
+│   ├── logo_32.png
+│   ├── logo_48.png
+│   └── logo_128.png
+└── README.md                    # Project documentation
 ```
 
 ### Component Architecture
@@ -217,16 +235,19 @@ chill-while-working-extension/
 - Hides scrollbars
 
 **JavaScript Functionality:**
-- Forces theater mode on player
-- Makes video player primary focus
-- Automatically requests Picture-in-Picture mode
-- Creates control dock with two buttons:
-  - "Let's Chill" - Toggles PiP and minimizes window
-  - "Skip Ad" - Skips YouTube ads programmatically
-- Ad skipping logic:
+- **Intelligent Video Detection**: Finds largest playing video using size-based sorting
+- **Auto-PiP Request**: Automatically requests PiP mode when video is ready
+- **Auto-Minimize**: Sends minimize request to background after PiP activates
+- **Smart PiP Switching**: Uses ResizeObserver to detect video size changes in playlists
+- **PiP State Tracking**: Marks videos with `__pip__` attribute for state management
+- **Theater Mode**: Forces theater mode on player
+- **Control Dock**: Creates floating control buttons
+  - "Let's Chill" - Manual PiP toggle and window minimize
+  - "Skip Ad" - Automatic ad skipping
+- **Ad Skipping Logic**:
   - Clicks skip buttons when available
   - Fast-forwards to end of video when ad overlay detected
-- Uses MutationObserver to maintain player state
+- **MutationObserver**: Maintains player state and UI hiding
 
 ---
 
@@ -243,8 +264,9 @@ chill-while-working-extension/
 1. User pastes YouTube URL into input field
 2. Clicks "Play" button
 3. Extension opens popup window at configured position
-4. Video plays in minimal UI with PiP controls
-5. URL automatically added to history
+4. Video automatically enters PiP mode
+5. Popup window automatically minimizes
+6. URL automatically added to history
 
 ### 3. Add to History
 1. User navigates to YouTube video
@@ -257,14 +279,16 @@ chill-while-working-extension/
 1. User opens side panel
 2. Views history list with titles and timestamps
 3. Clicks "Play" button on history entry
-4. Video opens in popup window
+4. Video opens in popup window with auto-PiP
 5. History entry remains for repeat playback
 
 ### 5. Enhanced PiP Experience
-1. "Let's Chill" button activates browser PiP
-2. Popup window automatically minimizes
-3. "Skip Ad" button bypasses YouTube advertisements
-4. Native browser PiP controls available
+1. Video automatically requests PiP mode on load
+2. Popup window automatically minimizes when PiP activates
+3. "Let's Chill" button provides manual PiP control
+4. "Skip Ad" button bypasses YouTube advertisements
+5. Smart switching to largest video in playlists
+6. Native browser PiP controls available
 
 ---
 
@@ -344,6 +368,24 @@ Extension windows are identified by:
 - Persistent storage in `chrome.storage.local`
 - Automatic application on load
 
+### Intelligent Video Detection
+
+Uses `findLargestPlayingVideo()` function that:
+1. Queries all video elements on page
+2. Filters videos with readyState > 0
+3. Filters videos where PiP is not disabled
+4. Sorts by size (width × height)
+5. Returns largest video element
+
+### Smart PiP Switching
+
+Uses ResizeObserver to monitor video size changes:
+1. Observes current PiP video element
+2. Detects resize events (playlist video changes)
+3. Finds new largest playing video
+4. Switches PiP to new video if larger
+5. Stops observing old video
+
 ---
 
 ## Browser Compatibility
@@ -356,11 +398,12 @@ Extension windows are identified by:
 
 ## Limitations & Known Issues
 
-1. **Playlist Support**: Basic playlist support (plays first video)
-2. **YouTube Music**: Limited functionality on music.youtube.com
-3. **Ad Blocking**: Ad skipping may not work on all ad types
-4. **PiP Restrictions**: Some YouTube videos disable PiP (live streams)
-5. **Window State**: Last window position per video not remembered
+1. **YouTube Only**: Currently supports YouTube videos only
+2. **Playlist Support**: Basic playlist support with smart video switching
+3. **YouTube Music**: Limited functionality on music.youtube.com
+4. **Ad Blocking**: Ad skipping may not work on all ad types
+5. **PiP Restrictions**: Some YouTube videos disable PiP (live streams)
+6. **Window State**: Last window position per video not remembered
 
 ---
 
@@ -400,6 +443,9 @@ Extension windows are identified by:
 ## Roadmap
 
 ### Planned Features
+- Universal platform support (Facebook, TikTok, Instagram, etc.)
+- Floating PiP buttons on all video pages
+- Dynamic badge indicator with video detection
 - Playlist queue management
 - Keyboard shortcuts
 - Custom themes and color schemes
@@ -408,7 +454,6 @@ Extension windows are identified by:
 - Remember last window position per video
 - Fullscreen toggle button
 - Volume controls in dock
-- Integration with YouTube Music
 
 ### Potential Enhancements
 - Multi-window support (multiple videos)
@@ -473,7 +518,15 @@ If you encounter any issues or have questions:
 
 ## Changelog
 
-### Version 1.0.0 (Current)
+### Version 1.1.0 (Current)
+- **Auto-Minimize**: Popup window automatically minimizes when PiP activates
+- **Intelligent Video Detection**: Smart detection of largest playing video (handles multiple videos)
+- **Smart PiP Switching**: Automatically switches to larger video in playlists using ResizeObserver
+- **PiP State Tracking**: Enhanced state management with `__pip__` attribute markers
+- **Retry Logic**: Automatic retry for failed PiP requests
+- **Improved Error Logging**: Better debugging information for minimize and PiP operations
+
+### Version 1.0.0
 - Initial release
 - Picture-in-Picture popup window functionality
 - Configurable size and position
